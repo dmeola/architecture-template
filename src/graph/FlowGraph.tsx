@@ -12,14 +12,14 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import type { Domain, FlowDef } from "@/data/types";
-import { nodeById } from "@/data/model";
+import { useModel } from "@/lib/model/ModelContext";
 import { domainColors } from "@/lib/theme";
 import { ArchNode, type ArchFlowNode } from "./ArchNode";
 import type { Point } from "./layout";
 
 function LaneLabelNode({ data }: { data: { text: string } }) {
   return (
-    <div className="pointer-events-none select-none text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+    <div className="pointer-events-none select-none text-[13px] font-semibold uppercase tracking-[0.2em] text-slate-300">
       {data.text}
     </div>
   );
@@ -43,11 +43,23 @@ interface FlowGraphProps {
   showLabels?: boolean;
   /** Color edges by this domain and animate/number the traced journey steps. */
   traceDomain?: Domain | null;
+  /**
+   * Whether to number/animate `step` edges. Turned off when a phase filter would show
+   * only part of a trace — a lone "1." and "4." with the rest filtered out reads as a
+   * bug rather than as a partial view. Domain coloring is unaffected.
+   */
+  showSteps?: boolean;
   /** Static swimlane headers rendered inside the canvas. */
   laneLabels?: LaneLabel[];
 }
 
-const NEUTRAL_EDGE = "#3f4b5e";
+const NEUTRAL_EDGE = "#5a6b85";
+
+// Stable identity for callers that omit `laneLabels` — an inline `[]` default
+// would be a fresh array every render, and since laneLabels is now a
+// dependency of the node-reconciliation effect below, that would re-run the
+// effect (and its setNodes call) on every render, forever.
+const NO_LANE_LABELS: LaneLabel[] = [];
 
 export function FlowGraph({
   positions,
@@ -56,8 +68,10 @@ export function FlowGraph({
   onSelect,
   showLabels = true,
   traceDomain = null,
-  laneLabels = [],
+  showSteps = true,
+  laneLabels = NO_LANE_LABELS,
 }: FlowGraphProps) {
+  const { nodeById } = useModel();
   const [hoverId, setHoverId] = useState<string | null>(null);
 
   const focusId = hoverId ?? selectedId;
@@ -71,35 +85,51 @@ export function FlowGraph({
     return ids;
   }, [focusId, flows]);
 
-  // Initial nodes only (useNodesState ignores later values); hover/selection
-  // styling is applied via setNodes below, and views remount FlowGraph (via
-  // key) when positions change.
-  const initialNodes = useMemo(() => {
-    const result: (ArchFlowNode | Node)[] = [];
-    for (const [id, position] of positions) {
-      const def = nodeById.get(id);
-      if (!def) continue;
-      result.push({
-        id,
-        type: "arch",
-        position,
-        data: { def, dimmed: false },
-      } satisfies ArchFlowNode);
-    }
-    for (const label of laneLabels) {
-      result.push({
-        id: `lane-${label.id}`,
-        type: "laneLabel",
-        position: { x: label.x, y: label.y },
-        data: { text: label.text },
-        draggable: false,
-        selectable: false,
-      });
-    }
-    return result;
-  }, [positions, laneLabels]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node>(initialNodes);
+  // Reconcile the node set whenever the model-derived inputs change (initial
+  // mount, or a chat edit updating `positions`/`nodeById` live). Merging into
+  // the existing nodes — instead of replacing wholesale like the old
+  // initial-only `useNodesState` seed did — keeps each surviving node's
+  // measured dimensions and (if dragged) position, so an edit doesn't cause
+  // the flicker/re-fit a full rebuild would.
+  useEffect(() => {
+    setNodes((current) => {
+      const currentById = new Map(current.map((node) => [node.id, node]));
+      const result: (ArchFlowNode | Node)[] = [];
+      for (const [id, position] of positions) {
+        const def = nodeById.get(id);
+        if (!def) continue;
+        const existing = currentById.get(id);
+        if (existing && existing.type === "arch") {
+          const data = existing.data as ArchFlowNode["data"];
+          result.push({ ...existing, data: { ...data, def } });
+        } else {
+          result.push({
+            id,
+            type: "arch",
+            position,
+            data: { def, dimmed: false },
+          } satisfies ArchFlowNode);
+        }
+      }
+      for (const label of laneLabels) {
+        const id = `lane-${label.id}`;
+        const existing = currentById.get(id);
+        result.push(
+          existing ?? {
+            id,
+            type: "laneLabel",
+            position: { x: label.x, y: label.y },
+            data: { text: label.text },
+            draggable: false,
+            selectable: false,
+          },
+        );
+      }
+      return result;
+    });
+  }, [positions, laneLabels, nodeById, setNodes]);
 
   // Apply hover dimming and selection by mutating node state in place. If we
   // instead rebuilt the node objects each render, React Flow would drop their
@@ -128,10 +158,14 @@ export function FlowGraph({
         .map((flow) => {
           const inFocus =
             !focusId || flow.source === focusId || flow.target === focusId;
+          // A step belongs to exactly one trace — `stepDomain`, or the first domain tag.
+          // Matching on `domains.includes` instead would leak step numbers into every
+          // other domain a multi-domain flow is tagged with.
           const traced =
+            showSteps &&
             traceDomain !== null &&
             flow.step !== undefined &&
-            flow.domains.includes(traceDomain);
+            (flow.stepDomain ?? flow.domains[0]) === traceDomain;
           const color = traceDomain
             ? domainColors[traceDomain]
             : inFocus && focusId
@@ -155,16 +189,16 @@ export function FlowGraph({
               opacity: inFocus ? 1 : 0.1,
             },
             labelStyle: {
-              fill: inFocus ? "#cbd5e1" : "#475569",
-              fontSize: 10,
+              fill: inFocus ? "#e2e8f0" : "#475569",
+              fontSize: 12,
             },
-            labelBgStyle: { fill: "#0b1220", fillOpacity: 0.85 },
-            labelBgPadding: [4, 2] as [number, number],
+            labelBgStyle: { fill: "#0b1220", fillOpacity: 0.92 },
+            labelBgPadding: [5, 3] as [number, number],
             labelBgBorderRadius: 4,
             markerEnd: { type: MarkerType.ArrowClosed, color, width: 16, height: 16 },
           };
         }),
-    [flows, positions, focusId, showLabels, traceDomain],
+    [flows, positions, focusId, showLabels, traceDomain, showSteps],
   );
 
   const handleNodeClick: NodeMouseHandler = useCallback(

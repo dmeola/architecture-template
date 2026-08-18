@@ -1,7 +1,10 @@
 import dagre from "@dagrejs/dagre";
 
-export const NODE_WIDTH = 224;
-export const NODE_HEIGHT = 78;
+// Sized to the type scale in `ArchNode.tsx`, not the other way round: the category
+// eyebrow and status label share one row, so the width has to hold both at 11px before
+// the eyebrow wraps and pushes the node past its height.
+export const NODE_WIDTH = 248;
+export const NODE_HEIGHT = 88;
 
 export interface Point {
   x: number;

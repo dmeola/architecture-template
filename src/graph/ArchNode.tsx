@@ -28,13 +28,13 @@ export function ArchNode({ data, selected }: NodeProps<ArchFlowNode>) {
         width: NODE_WIDTH,
         background: visual.bg,
         borderTop: `1px ${isPlanned ? "dashed" : "solid"} ${
-          selected ? visual.accent : `${visual.accent}55`
+          selected ? visual.accent : `${visual.accent}b3`
         }`,
         borderRight: `1px ${isPlanned ? "dashed" : "solid"} ${
-          selected ? visual.accent : `${visual.accent}55`
+          selected ? visual.accent : `${visual.accent}b3`
         }`,
         borderBottom: `1px ${isPlanned ? "dashed" : "solid"} ${
-          selected ? visual.accent : `${visual.accent}55`
+          selected ? visual.accent : `${visual.accent}b3`
         }`,
         borderLeft: `4px solid ${visual.accent}`,
         opacity: dimmed ? 0.18 : 1,
@@ -45,14 +45,14 @@ export function ArchNode({ data, selected }: NodeProps<ArchFlowNode>) {
       <Handle type="source" position={Position.Right} className="!bg-slate-500 !border-0 !w-1.5 !h-1.5" />
       <div className="flex items-center justify-between gap-2">
         <span
-          className="text-[10px] font-semibold uppercase tracking-wider"
+          className="text-[11px] font-semibold uppercase tracking-wider"
           style={{ color: visual.accent }}
         >
           {visual.categoryLabel}
         </span>
         {def.kind === "system" && (
           <span
-            className="flex items-center gap-1 text-[10px]"
+            className="flex items-center gap-1 text-[11px]"
             style={{ color: statusColors[def.status] }}
             title={statusLabels[def.status]}
           >
@@ -64,10 +64,10 @@ export function ArchNode({ data, selected }: NodeProps<ArchFlowNode>) {
           </span>
         )}
       </div>
-      <div className="mt-0.5 truncate text-sm font-semibold text-slate-100">
+      <div className="mt-0.5 truncate text-[15px] font-semibold text-slate-100">
         {def.name}
       </div>
-      <div className="truncate text-[11px] text-slate-400">{subtitle(def)}</div>
+      <div className="truncate text-xs text-slate-300">{subtitle(def)}</div>
     </div>
   );
 }

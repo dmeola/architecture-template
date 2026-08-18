@@ -16,7 +16,7 @@ Architecture content lives in typed TypeScript under `src/data/`; the categorica
 | `flows.ts` | `flows: FlowDef[]` | Directed edges between any two node ids |
 | `migrations.ts` | `migrations: MigrationDef[]` | Legacy → modern replacement pairs with status |
 | `sequences.ts` | `sequences: SequenceDef[]`, `actors` | Ordered order/payment scenarios shown in the Sequence Diagrams view |
-| `model.ts` | `allNodes`, `nodeById`, `flowsForNode()`, `flowsForDomain()`, `nodeIdsForFlows()`, `sequenceById`, `isArchNode()`, `participantLabel()` + re-exports of the data arrays | Derived lookups — no data lives here |
+| `model.ts` | `buildModel()`, `Model`, `staticModel`, `Phase`, `matchesPhase()` | Derived lookups (`nodeById`, `flowsForNode()`, `nodePhase()`, …) — no data lives here. `buildModel()` is pure, so the AI chat editor can call it again with a draft dataset for live preview (see [app-architecture.md](app-architecture.md)); everything else reads the result via `useModel()`, never the raw arrays directly |
 
 ## The id graph (what must stay consistent)
 
@@ -28,6 +28,18 @@ Node `id`s are the glue. They are referenced from:
 - `src/config/landscape.ts` — only for lanes that use an explicit `{ ids: [...] }` list (tier/kind lanes derive membership automatically)
 
 **There is no runtime validation.** `FlowGraph` silently skips edges whose endpoints aren't in the current view, and `model.ts` lookups just miss. A typo'd id doesn't crash — the edge or node quietly disappears. Double-check ids against the actual arrays when adding flows. If you rename an id, grep `src/data/` and `src/config/`.
+
+(Editing through the AI chat instead of by hand doesn't have this gap — its tools validate every reference before writing. See [app-architecture.md](app-architecture.md).)
+
+## Current / target phase
+
+Any client migrating toward a new platform can mark which side of that cutover something belongs to, and the header's Current/Both/Target toggle filters every graph view (except Migration Map) accordingly. This is opt-in — a model with no migration in flight can ignore it entirely; everything defaults to `"both"`.
+
+- A **system**'s phase is *derived* from its `status`, not set directly: `migrating-out`/`deprecated` → `current`, `planned` → `target`, everything else → `both`. See `nodePhase()` in `model.ts`.
+- A **data store** or **external** has no status, so it carries an explicit optional `phase?: "current" | "target" | "both"` (omit for the common case — retained through the cutover).
+- A **flow**'s phase is derived from its `planned` flag and its endpoints' phases (`flowPhase()`); a **sequence**'s from its messages' `planned` flags and its participants' phases (`sequencePhase()`).
+
+Nothing to configure to turn this off for a client with no migration underway — every node defaults to `"both"` and the toggle stays a no-op.
 
 ## Checklists by change type
 
@@ -49,8 +61,8 @@ Same as a system, but in `datastores.ts` / `externals.ts`. They land in the "Dat
 3. Tag every `Domain` it belongs to — domain tags drive the Data Flows view filter.
 4. Keep `label` short (it renders on the edge); use `description` for detail (shows in the DetailPanel).
 5. Optional flags:
-   - `step: n` — includes the edge in the animated, numbered trace shown when its domain is selected (the sample uses this for the Orders lifecycle). Steps that happen in parallel may share a number.
-   - `planned: true` — renders dashed, for flows that don't exist yet.
+   - `step: n` — includes the edge in the animated, numbered trace shown when its domain is selected (the sample uses this for the Orders lifecycle). Steps that happen in parallel may share a number. If the flow is tagged with more than one `Domain`, also set `stepDomain` to the one the step belongs to — otherwise the number leaks into every domain chip the flow is tagged with.
+   - `planned: true` — renders dashed, for flows that don't exist yet (and puts the flow in the `target` phase — see below).
 
 ### Add a tier, domain, status, or flow kind
 

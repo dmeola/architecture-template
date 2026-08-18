@@ -25,7 +25,7 @@ Adjust the arrays to the client's world:
 
 - `TIERS` — the architectural layers you'll group systems into (these are also the Landscape swimlanes). Give each an `accent`, `bg`, and `label`.
 - `DOMAINS` — the business domains flows belong to (Data Flows chips). Array order = chip order.
-- `SYSTEM_STATUSES`, `FLOW_KINDS`, `MIGRATION_STATUSES` — usually fine as-is; edit labels/colors if the client's language differs.
+- `SYSTEM_STATUSES`, `FLOW_KINDS`, `MIGRATION_STATUSES` — usually fine as-is; edit labels/colors if the client's language differs. Leave the `SYSTEM_STATUSES` **ids** (`production`, `migrating-in`, `migrating-out`, `planned`, `deprecated`) alone if you want the Current/Target phase toggle to keep working out of the box — `nodePhase()` in `src/data/model.ts` switches on those exact ids. Renaming a label is fine; renaming an id needs a matching edit there too.
 
 The union types, theme colors/labels, and legend all derive from these arrays automatically — no other file to touch.
 
@@ -52,3 +52,7 @@ npm run dev
 ```
 
 Check all four views (Landscape lanes populate, Data Flows chips + Orders trace animate, Data Stores fact card, Migration Map statuses). Then deploy per the [README](../README.md) (Vercel behind Cloudflare Access).
+
+## 7. Optional: the AI chat editor + GitHub write-back
+
+The "Edit with AI" bubble works with zero setup for browsing and proposing changes — it only needs a GitHub App to actually **save** a proposed change or list/revert History. If this client wants that, see the README's "AI chat editor & GitHub write-back" section for creating the App and setting its five env vars. Skip it entirely and the rest of the app is unaffected.
