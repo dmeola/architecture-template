@@ -32,7 +32,7 @@ export function SequenceView({
   if (!active) {
     return (
       <div className="flex h-full items-center justify-center px-6 text-center text-sm text-slate-300">
-        No {phase === "current" ? "current" : "target"}-state sequences to show.
+        No sequences in the {phase} state to show.
       </div>
     );
   }
