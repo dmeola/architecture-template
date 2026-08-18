@@ -1,7 +1,7 @@
 "use client";
 
-import { flowsForNode, nodeById } from "@/data/model";
 import type { ArchNodeDef, FlowDef } from "@/data/types";
+import { useModel } from "@/lib/model/ModelContext";
 import {
   domainColors,
   domainLabels,
@@ -20,7 +20,7 @@ interface DetailPanelProps {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mt-5">
-      <h4 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+      <h4 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
         {title}
       </h4>
       <div className="mt-1.5">{children}</div>
@@ -37,6 +37,7 @@ function FlowRow({
   direction: "in" | "out";
   onSelect: (id: string) => void;
 }) {
+  const { nodeById } = useModel();
   const counterpartId = direction === "out" ? flow.target : flow.source;
   const counterpart = nodeById.get(counterpartId);
   return (
@@ -44,19 +45,19 @@ function FlowRow({
       <div className="flex items-center justify-between gap-2">
         <button
           onClick={() => onSelect(counterpartId)}
-          className="truncate text-xs font-medium text-slate-200 hover:text-sky-300"
+          className="truncate text-[13px] font-medium text-slate-200 hover:text-sky-300"
         >
           {direction === "out" ? "→ " : "← "}
           {counterpart?.name ?? counterpartId}
         </button>
-        <span className="shrink-0 text-[10px] text-slate-500">
+        <span className="shrink-0 text-[11px] text-slate-400">
           {flowKindLabels[flow.kind]}
           {flow.planned ? " · planned" : ""}
         </span>
       </div>
-      <div className="mt-0.5 text-[11px] text-slate-400">{flow.label}</div>
+      <div className="mt-0.5 text-xs text-slate-300">{flow.label}</div>
       {flow.description && (
-        <div className="mt-1 text-[11px] leading-relaxed text-slate-500">
+        <div className="mt-1 text-xs leading-relaxed text-slate-400">
           {flow.description}
         </div>
       )}
@@ -64,7 +65,7 @@ function FlowRow({
         {flow.domains.map((domain) => (
           <span
             key={domain}
-            className="rounded px-1.5 py-px text-[10px]"
+            className="rounded px-1.5 py-px text-[11px]"
             style={{
               color: domainColors[domain],
               background: `${domainColors[domain]}1a`,
@@ -83,18 +84,18 @@ function SystemFacts({ def }: { def: ArchNodeDef }) {
     return (
       <>
         <Section title="Stack">
-          <ul className="space-y-0.5 text-xs text-slate-300">
+          <ul className="space-y-0.5 text-[13px] text-slate-300">
             {def.stack.map((item) => (
               <li key={item}>{item}</li>
             ))}
           </ul>
         </Section>
         <Section title="Runtime">
-          <div className="text-xs text-slate-300">{def.runtime}</div>
+          <div className="text-[13px] text-slate-300">{def.runtime}</div>
         </Section>
         {def.repoPath && (
           <Section title="Repo">
-            <code className="break-all font-mono text-[11px] text-slate-400">
+            <code className="break-all font-mono text-xs text-slate-300">
               {def.repoPath}
             </code>
           </Section>
@@ -105,7 +106,7 @@ function SystemFacts({ def }: { def: ArchNodeDef }) {
               href={def.url}
               target="_blank"
               rel="noreferrer"
-              className="text-xs text-sky-400 hover:underline"
+              className="text-[13px] text-sky-400 hover:underline"
             >
               {def.url}
             </a>
@@ -113,10 +114,10 @@ function SystemFacts({ def }: { def: ArchNodeDef }) {
         )}
         {def.notes && def.notes.length > 0 && (
           <Section title="Notes">
-            <ul className="space-y-1.5 text-xs leading-relaxed text-slate-400">
+            <ul className="space-y-1.5 text-[13px] leading-relaxed text-slate-300">
               {def.notes.map((note) => (
                 <li key={note} className="flex gap-1.5">
-                  <span className="text-slate-600">•</span>
+                  <span className="text-slate-400">•</span>
                   {note}
                 </li>
               ))}
@@ -130,10 +131,10 @@ function SystemFacts({ def }: { def: ArchNodeDef }) {
     return (
       <>
         <Section title="Technology">
-          <div className="text-xs text-slate-300">{def.technology}</div>
+          <div className="text-[13px] text-slate-300">{def.technology}</div>
         </Section>
         <Section title="Contents">
-          <ul className="space-y-1 text-xs text-slate-300">
+          <ul className="space-y-1 text-[13px] text-slate-300">
             {def.contents.map((item) => (
               <li key={item} className="flex gap-1.5">
                 <span className="text-cyan-400">•</span>
@@ -147,12 +148,13 @@ function SystemFacts({ def }: { def: ArchNodeDef }) {
   }
   return (
     <Section title="Category">
-      <div className="text-xs text-slate-300">{def.category}</div>
+      <div className="text-[13px] text-slate-300">{def.category}</div>
     </Section>
   );
 }
 
 export function DetailPanel({ nodeId, onSelect, onClose }: DetailPanelProps) {
+  const { nodeById, flowsForNode } = useModel();
   const def = nodeById.get(nodeId);
   if (!def) return null;
   const visual = nodeVisual(def);
@@ -166,7 +168,7 @@ export function DetailPanel({ nodeId, onSelect, onClose }: DetailPanelProps) {
       >
         <div>
           <div
-            className="text-[10px] font-semibold uppercase tracking-wider"
+            className="text-[11px] font-semibold uppercase tracking-wider"
             style={{ color: visual.accent }}
           >
             {visual.categoryLabel}
@@ -176,7 +178,7 @@ export function DetailPanel({ nodeId, onSelect, onClose }: DetailPanelProps) {
           </h3>
           {def.kind === "system" && (
             <span
-              className="mt-1 inline-flex items-center gap-1.5 text-[11px]"
+              className="mt-1 inline-flex items-center gap-1.5 text-xs"
               style={{ color: statusColors[def.status] }}
             >
               <span
@@ -189,14 +191,14 @@ export function DetailPanel({ nodeId, onSelect, onClose }: DetailPanelProps) {
         </div>
         <button
           onClick={onClose}
-          className="rounded-md px-2 py-1 text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-300"
+          className="rounded-md px-2 py-1 text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200"
           aria-label="Close details"
         >
           ✕
         </button>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6">
-        <p className="mt-4 text-xs leading-relaxed text-slate-400">
+        <p className="mt-4 text-[13px] leading-relaxed text-slate-300">
           {def.description}
         </p>
         <SystemFacts def={def} />

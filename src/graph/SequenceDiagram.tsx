@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import type { SequenceDef } from "@/data/types";
-import { isArchNode, nodeById, participantLabel } from "@/data/model";
+import type { ArchNodeDef, SequenceDef } from "@/data/types";
+import { useModel } from "@/lib/model/ModelContext";
 import { domainColors, flowKindLabels, nodeVisual } from "@/lib/theme";
 
 interface SequenceDiagramProps {
@@ -13,23 +13,41 @@ interface SequenceDiagramProps {
 
 // ── Geometry (all in px) ───────────────────────────────────────────
 const PAD = 28;
-const BOX_W = 156;
-const BOX_H = 52;
-const COL_W = 200; // distance between adjacent lifeline centers
+const BOX_W = 180;
+const BOX_H = 66;
+const COL_W = 228; // distance between adjacent lifeline centers
 const HEADER_TOP = 24;
 const FIRST_MSG_GAP = 44; // header bottom → first message
-const ROW_H = 64;
-const NOTE_H = 22;
+const ROW_H = 72;
 const SELF_LOOP_W = 46;
 const SELF_LOOP_H = 26;
-const SELF_EXTRA = 24; // extra row height a self-message needs
+const SELF_EXTRA = 28; // extra row height a self-message needs
 const ACT_W = 8; // activation-bar width
 const ACT_MIN = 18; // stub height when a call has no matching return
+
+// ── Note sizing ────────────────────────────────────────────────────
+// Notes are the one variable-height element, so their row allowance is estimated from
+// the text rather than fixed: a long note wraps to multiple lines, and a constant would
+// either overrun the next message row or leave a gap under every short note.
+const NOTE_W = 248; // outer width of the rendered note, padding included
+const NOTE_PAD_X = 12; // px-1.5 either side
+const NOTE_LINE_H = 15; // 12px text at leading-tight
+const NOTE_PAD_Y = 12; // py-0.5 either side, plus clearance to the next row
+// Effective advance per character, not the mean glyph width: word wrapping leaves every
+// line ragged, so the usable characters per line run well below width/glyph-width.
+// Erring high costs a few px of gap; erring low overlaps the next row.
+const NOTE_CHAR_W = 7;
+
+function noteHeight(note: string | undefined): number {
+  if (!note) return 0;
+  const perLine = Math.floor((NOTE_W - NOTE_PAD_X) / NOTE_CHAR_W);
+  return Math.ceil(note.length / perLine) * NOTE_LINE_H + NOTE_PAD_Y;
+}
 
 /** Neutral look for diagram-only actors (not architecture nodes). */
 const ACTOR_VISUAL = { accent: "#94a3b8", bg: "#1e242d", categoryLabel: "Actor" };
 
-function visualFor(id: string) {
+function visualFor(id: string, nodeById: Map<string, ArchNodeDef>) {
   const def = nodeById.get(id);
   return def ? nodeVisual(def) : ACTOR_VISUAL;
 }
@@ -39,6 +57,7 @@ export function SequenceDiagram({
   selectedId,
   onSelect,
 }: SequenceDiagramProps) {
+  const { isArchNode, nodeById, participantLabel } = useModel();
   const color = domainColors[sequence.domain];
 
   const layout = useMemo(() => {
@@ -52,7 +71,7 @@ export function SequenceDiagram({
     // Assign a y to each message, growing the canvas for self-loops and notes.
     // Cumulative offsets are summed functionally (no mutable accumulator during render).
     const rowHeight = (m: SequenceDef["messages"][number]) =>
-      (m.from === m.to ? ROW_H + SELF_EXTRA : ROW_H) + (m.note ? NOTE_H : 0);
+      (m.from === m.to ? ROW_H + SELF_EXTRA : ROW_H) + noteHeight(m.note);
     const rows = messages.map((m, i) => ({
       m,
       self: m.from === m.to,
@@ -123,7 +142,7 @@ export function SequenceDiagram({
             y1={lifelineTop}
             x2={cx(i)}
             y2={lifelineBottom}
-            stroke="#26324a"
+            stroke="#5a6b85"
             strokeWidth={1}
             strokeDasharray="3 4"
           />
@@ -189,7 +208,7 @@ export function SequenceDiagram({
 
       {/* Participant headers */}
       {participants.map((id, i) => {
-        const visual = visualFor(id);
+        const visual = visualFor(id, nodeById);
         const clickable = isArchNode(id);
         const selected = selectedId === id;
         // Longhand border props only — mixing the `borderTop` shorthand with `borderColor`
@@ -215,12 +234,12 @@ export function SequenceDiagram({
         const content = (
           <>
             <div
-              className="truncate text-[9px] font-semibold uppercase tracking-wider"
+              className="truncate text-[11px] font-semibold uppercase tracking-wider"
               style={{ color: visual.accent }}
             >
               {visual.categoryLabel}
             </div>
-            <div className="mt-0.5 line-clamp-2 text-[11px] font-medium leading-tight text-slate-100">
+            <div className="mt-0.5 line-clamp-2 text-[13px] font-medium leading-tight text-slate-100">
               {participantLabel(id)}
             </div>
           </>
@@ -264,7 +283,7 @@ export function SequenceDiagram({
               left: (cx(fromIdx) + cx(toIdx)) / 2,
               top: row.y - 11,
               transform: "translate(-50%, -100%)",
-              maxWidth: 184,
+              maxWidth: 208,
             };
 
         return (
@@ -274,18 +293,21 @@ export function SequenceDiagram({
               style={labelStyle}
             >
               {m.kind !== "api-call" && (
-                <span className="text-[8px] font-semibold uppercase tracking-wider text-slate-500">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                   {flowKindLabels[m.kind]}
                 </span>
               )}
-              <span className="text-[11px] leading-tight text-slate-200">
+              <span className="text-[13px] leading-tight text-slate-200">
                 {m.label}
               </span>
             </div>
             {m.note && (
               <div
-                className="absolute max-w-[220px] text-center text-[10px] italic leading-tight text-slate-500"
+                className="absolute rounded bg-[#0e1626]/90 px-1.5 py-0.5 text-center text-xs italic leading-tight text-slate-400"
                 style={{
+                  // Width is driven by NOTE_W rather than a utility class so the wrap
+                  // matches the height `noteHeight()` reserved for this row.
+                  maxWidth: NOTE_W,
                   left: (cx(fromIdx) + cx(toIdx)) / 2,
                   top: row.y + 7,
                   transform: "translateX(-50%)",

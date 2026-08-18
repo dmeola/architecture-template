@@ -18,12 +18,12 @@ export function Legend() {
   return (
     <div className="pointer-events-auto absolute bottom-4 right-4 z-40">
       {open ? (
-        <div className="w-64 rounded-lg border border-slate-800 bg-[#0e1626]/95 p-4 shadow-xl">
+        <div className="w-72 rounded-lg border border-slate-700 bg-[#0e1626]/95 p-4 shadow-xl">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-200">Legend</span>
+            <span className="text-[13px] font-semibold text-slate-200">Legend</span>
             <button
               onClick={() => setOpen(false)}
-              className="text-slate-500 hover:text-slate-300"
+              className="text-slate-400 hover:text-slate-200"
               aria-label="Close legend"
             >
               ✕
@@ -36,7 +36,7 @@ export function Legend() {
                   className="h-2.5 w-2.5 rounded-sm"
                   style={{ background: category.color }}
                 />
-                <span className="text-[11px] text-slate-400">{category.label}</span>
+                <span className="text-xs text-slate-300">{category.label}</span>
               </div>
             ))}
           </div>
@@ -48,12 +48,12 @@ export function Legend() {
                     className="h-1.5 w-1.5 rounded-full"
                     style={{ background: status.color }}
                   />
-                  <span className="text-[11px] text-slate-400">{status.label}</span>
+                  <span className="text-xs text-slate-300">{status.label}</span>
                 </div>
               ))}
             </div>
           </div>
-          <div className="mt-3 space-y-1 border-t border-slate-800 pt-3 text-[11px] text-slate-500">
+          <div className="mt-3 space-y-1 border-t border-slate-800 pt-3 text-xs text-slate-400">
             <div>Solid arrows: active flows · dashed: planned</div>
             <div>Hover a node to isolate its connections</div>
           </div>
@@ -61,7 +61,7 @@ export function Legend() {
       ) : (
         <button
           onClick={() => setOpen(true)}
-          className="rounded-md border border-slate-700 bg-[#0e1626]/95 px-3 py-1.5 text-xs text-slate-400 shadow-lg transition-colors hover:text-slate-200"
+          className="rounded-md border border-slate-600 bg-[#0e1626]/95 px-3 py-1.5 text-[13px] text-slate-300 shadow-lg transition-colors hover:text-slate-100"
         >
           Legend
         </button>

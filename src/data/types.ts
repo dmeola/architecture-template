@@ -11,6 +11,21 @@ import type {
 // `@/data/types` imports keep resolving. Edit the vocabulary in taxonomy.ts, not here.
 export type { Domain, FlowKind, MigrationStatus, SystemStatus, Tier };
 
+/**
+ * Which side of a legacy-to-modern cutover something belongs to, for the global
+ * Current/Target filter.
+ *
+ * `both` means "exists before and after" — retained systems, third parties, and the
+ * flows between them. It is the default for anything not explicitly one-sided.
+ *
+ * A system's phase is DERIVED from its `status` (see `nodePhase()` in `model.ts`), so
+ * there is nothing to set on `SystemDef`. Data stores and externals have no status, and
+ * their phase can't always be derived from their flows either (a shared piece of
+ * infrastructure might be tagged on target-only flows despite running today), so those
+ * two kinds carry an explicit optional `phase`.
+ */
+export type Phase = "current" | "target" | "both";
+
 export interface SystemDef {
   kind: "system";
   id: string;
@@ -32,6 +47,8 @@ export interface DataStoreDef {
   technology: string;
   description: string;
   contents: string[];
+  /** Omit for stores that exist on both sides of the cutover. */
+  phase?: Phase;
 }
 
 export interface ExternalDef {
@@ -40,6 +57,8 @@ export interface ExternalDef {
   name: string;
   category: string;
   description: string;
+  /** Omit for third parties retained through the cutover (the usual case). */
+  phase?: Phase;
 }
 
 export type ArchNodeDef = SystemDef | DataStoreDef | ExternalDef;
@@ -59,6 +78,14 @@ export interface FlowDef {
    * parallel may share a number.
    */
   step?: number;
+  /**
+   * Which domain's trace a `step` belongs to. Defaults to `domains[0]`.
+   *
+   * Without this, a stepped flow tagged with several domains would render its number in
+   * every one of them — e.g. a step tagged both `orders` and `fulfillment` would show a
+   * stray number on the Fulfillment chip too. Set it when a stepped flow is multi-domain.
+   */
+  stepDomain?: Domain;
 }
 
 export interface MigrationDef {
