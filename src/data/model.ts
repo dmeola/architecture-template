@@ -105,8 +105,8 @@ export function buildModel(
       .map((id) => nodeById.get(id))
       .filter((node): node is ArchNodeDef => node !== undefined)
       .map(nodePhase);
-    if (ends.includes("current")) return "current";
     if (ends.includes("target")) return "target";
+    if (ends.includes("current")) return "current";
     return "both";
   }
 
