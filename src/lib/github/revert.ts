@@ -5,10 +5,10 @@ import { commitFiles, getChangedDataFiles, getFileContent, type CommitResult } f
  * commit on top of `main` — not a history rewrite. Only touches whichever of the
  * allowed data files that commit actually changed, leaving the rest untouched.
  *
- * There's no explicit concurrency check here: `commitFiles` always reads the current
- * `main` ref fresh at call time and builds on top of it, so a revert always lands as
- * the newest commit rather than failing on a stale precondition the way a Contents-API
- * PUT with a blob SHA would.
+ * Note: this doesn’t guarantee a revert can’t race with another write.
+ * `commitFiles()` reads the current `main` ref and attempts a fast-forward update; if
+ * `main` advances between `getRef` and `updateRef`, GitHub will reject the update and
+ * the revert will fail (caller can retry).
  */
 export async function revertCommit(
   sha: string,
