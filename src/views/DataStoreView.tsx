@@ -60,7 +60,7 @@ export function DataStoreView({
   if (!store) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-slate-300">
-        No data stores in the {phase === "current" ? "current" : "target"} state.
+        No data stores in the {phase} state.
       </div>
     );
   }
