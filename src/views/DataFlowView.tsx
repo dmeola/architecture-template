@@ -71,8 +71,7 @@ export function DataFlowView({
       <div className="min-h-0 flex-1">
         {domainFlows.length === 0 ? (
           <div className="flex h-full items-center justify-center px-6 text-center text-sm text-slate-300">
-            No {domainLabels[domain].toLowerCase()} flows in the{" "}
-            {phase === "current" ? "current" : "target"} state.
+            No {domainLabels[domain].toLowerCase()} flows in the {phase} state.
           </div>
         ) : (
           <FlowGraph
