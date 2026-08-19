@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { IntegrationMapView } from "@/views/IntegrationMapView";
 import { LandscapeView } from "@/views/LandscapeView";
 import { DataFlowView } from "@/views/DataFlowView";
 import { SequenceView } from "@/views/SequenceView";
@@ -17,6 +18,7 @@ import { Legend } from "./Legend";
 import { PhaseFilter } from "./PhaseFilter";
 
 const views: { id: ViewId; label: string }[] = [
+  { id: "map", label: "Integration Map" },
   { id: "landscape", label: "System Landscape" },
   { id: "flows", label: "Data Flows" },
   { id: "sequences", label: "Sequence Diagrams" },
@@ -34,6 +36,7 @@ const viewsWithLegend: ViewId[] = ["landscape", "flows", "stores"];
  * it of the very thing it exists to show.
  */
 const viewsWithPhaseFilter: ViewId[] = [
+  "map",
   "landscape",
   "flows",
   "sequences",
@@ -79,6 +82,13 @@ export function Explorer() {
         </header>
         <div className="flex min-h-0 flex-1">
           <main className="relative min-w-0 flex-1">
+            {view === "map" && (
+              <IntegrationMapView
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                phase={phase}
+              />
+            )}
             {view === "landscape" && (
               <LandscapeView
                 selectedId={selectedId}

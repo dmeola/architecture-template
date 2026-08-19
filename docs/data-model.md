@@ -9,6 +9,7 @@ Architecture content lives in typed TypeScript under `src/data/`; the categorica
 | `src/config/taxonomy.ts` | `TIERS`, `SYSTEM_STATUSES`, `FLOW_KINDS`, `DOMAINS`, `MIGRATION_STATUSES`, `NODE_KIND_VISUALS`, and the derived `Tier` / `SystemStatus` / `FlowKind` / `Domain` / `MigrationStatus` types | The categorical vocabulary + colors — single source of truth |
 | `src/config/site.ts` | `site`, `ViewId` | Branding and default view/domain |
 | `src/config/landscape.ts` | `lanes`, `LaneSpec` | Landscape swimlane columns |
+| `src/config/integration-map.ts` | `mapGroups`, `EDGE_LABELS`, `MapGroup` | Integration Map group membership + box positions. Only grouping and position — its edges are derived from `flows.ts` |
 | `types.ts` | model interfaces | `SystemDef`, `DataStoreDef`, `ExternalDef`, `FlowDef`, `MigrationDef`, `SequenceDef`, `SequenceMessage` (re-exports the union types from `taxonomy.ts`) |
 | `systems.ts` | `systems: SystemDef[]` | Every first-party system |
 | `datastores.ts` | `datastores: DataStoreDef[]` | Databases/storage with a `contents` list of what lives inside |
@@ -26,6 +27,7 @@ Node `id`s are the glue. They are referenced from:
 - `migrations.ts` — every entry in `from` and `to`
 - `sequences.ts` — every `participants` entry and every message `from`/`to` (except diagram-only actor ids declared in that file's `actors` map)
 - `src/config/landscape.ts` — only for lanes that use an explicit `{ ids: [...] }` list (tier/kind lanes derive membership automatically)
+- `src/config/integration-map.ts` — every node id, exactly once, across the `members` arrays. There is no catch-all, so this one is not automatic
 
 **There is no runtime validation.** `FlowGraph` silently skips edges whose endpoints aren't in the current view, and `model.ts` lookups just miss. A typo'd id doesn't crash — the edge or node quietly disappears. Double-check ids against the actual arrays when adding flows. If you rename an id, grep `src/data/` and `src/config/`.
 
@@ -47,12 +49,13 @@ Nothing to configure to turn this off for a client with no migration underway �
 
 1. Append a `SystemDef` to `systems.ts`. Pick `tier` and `status` from the ids in `src/config/taxonomy.ts`.
 2. Placement is usually automatic — the Landscape view derives each lane from a tier, so a system in an existing tier appears without further edits. (Only if you introduce a new tier, or use a custom `{ ids }` lane, do you touch `src/config/landscape.ts`.)
-3. Add `FlowDef`s in `flows.ts` connecting it to what it talks to. A node with no flows only appears in the Landscape view.
-4. If it participates in a migration, update `migrations.ts`.
+3. Add it to a group's `members` in `src/config/integration-map.ts`. This is **not** automatic — an ungrouped node renders nowhere on the Integration Map, which is the landing view. `IntegrationMapView` logs a dev-only console warning naming anything ungrouped or double-counted.
+4. Add `FlowDef`s in `flows.ts` connecting it to what it talks to. A node with no flows only appears in the Landscape and Integration Map views.
+5. If it participates in a migration, update `migrations.ts`.
 
 ### Add a data store or external service
 
-Same as a system, but in `datastores.ts` / `externals.ts`. They land in the "Data Stores" / "External Services" lanes automatically. Data stores get a filter chip in the Data Stores view — fill `contents` with the notable collections/tables/files.
+Same as a system, but in `datastores.ts` / `externals.ts`. They land in the "Data Stores" / "External Services" lanes automatically, but still need an Integration Map group. Data stores get a filter chip in the Data Stores view — fill `contents` with the notable collections/tables/files.
 
 ### Add a flow
 
@@ -99,4 +102,4 @@ npx tsc --noEmit     # catches type errors and bad union ids
 npm run dev          # then eyeball the affected view
 ```
 
-Things to check visually: the node appears in its Landscape lane, its edges show in the relevant domain filters, hover-highlighting picks up the new connections, and the DetailPanel fact sheet reads correctly.
+Things to check visually: the node appears in its Landscape lane **and in its Integration Map group**, its edges show in the relevant domain filters, hover-highlighting picks up the new connections, and the DetailPanel fact sheet reads correctly. Check the browser console too — the Integration Map warns there about ungrouped nodes.

@@ -7,7 +7,7 @@ How the explorer itself is built. For editing the *content* (systems, flows, mig
 Everything is a single page (`src/app/page.tsx` → `Explorer`). The curated model is plain TypeScript imported at build time — the only server round-trips are the optional AI chat editor and its GitHub write-back (below); browsing the map itself is static data plus client state (which view/node is active). Graph components are `"use client"` because React Flow requires the DOM.
 
 ```
-src/config/  (per-client: taxonomy, branding, swimlanes)
+src/config/  (per-client: taxonomy, branding, swimlanes, integration map)
    │  derives union types, colors, legend, lane membership
    ▼
 Explorer (view tabs + search + selection + phase state)
@@ -54,7 +54,7 @@ This whole feature is optional: without `GITHUB_APP_ID`/`GITHUB_APP_PRIVATE_KEY`
 
 ## Config vs. engine — what makes this a template
 
-- **`src/config/`** is per-client. `taxonomy.ts` defines the vocabulary (tiers, statuses, flow kinds, domains) as arrays of `{ id, label, color }`; the union types in `src/data/types.ts` and every map in `src/lib/theme.ts` are *derived* from it, so adding a domain (etc.) is a one-line edit. `site.ts` holds branding + defaults; `landscape.ts` holds swimlanes.
+- **`src/config/`** is per-client. `taxonomy.ts` defines the vocabulary (tiers, statuses, flow kinds, domains) as arrays of `{ id, label, color }`; the union types in `src/data/types.ts` and every map in `src/lib/theme.ts` are *derived* from it, so adding a domain (etc.) is a one-line edit. `site.ts` holds branding + defaults; `landscape.ts` holds swimlanes; `integration-map.ts` holds the Integration Map's group membership and box positions.
 - **`src/graph/`, `src/components/`, `src/lib/theme.ts`, `src/lib/model/`, `src/lib/chat/`, `src/lib/github/`, `src/proxy.ts`** are the generic engine — they consume config + data and never hard-code a client's ids or vocabulary. The one place worth a per-client look is the chat's `SYSTEM_PROMPT` (`src/app/api/chat/route.ts`) — the mechanics are generic, but you may want it to know something client-specific.
 
 Onboarding a client is therefore: edit `src/config/*` + `src/data/*`, leave the engine alone.
@@ -75,6 +75,41 @@ Positioning strategies:
 
 - **LandscapeView** computes fixed column/row positions from `src/config/landscape.ts`: each lane resolves to node ids by `tier`, by node `kind` (datastore/external), or an explicit id list. A new system in an existing tier appears automatically — no view edit needed.
 - **DataFlowView / DataStoreView** derive the node subset from flows, then auto-layout with `dagreLayout()` (`layout.ts`, left-to-right).
+- **IntegrationMapView** doesn't use `FlowGraph` at all — see below.
+
+## The Integration Map (`src/views/IntegrationMapView.tsx`)
+
+The one graph view that does **not** go through `FlowGraph`. It renders its own React Flow
+instance whose nodes are group boxes (`src/graph/MapGroupNode.tsx`), not model nodes — a
+different unit of composition, so sharing the engine would have meant parameterizing
+`FlowGraph` into something neither view wanted.
+
+What it does share is the model: everything except grouping and position is derived.
+
+- **Edges** aggregate `flows.ts`. Any flow whose endpoints fall in two different groups adds
+  to one group-to-group edge; `count` drives stroke weight and the distinct flow labels form
+  the label, unless `EDGE_LABELS` overrides it.
+- **Phase** goes through the same `matchesPhase(nodePhase(...), phase)` the other views use,
+  applied to members. A group whose members all filter out is dropped rather than drawn
+  empty, so the box count changes with the toggle.
+- **Selection** funnels into the same `onSelect(id)` as everywhere else — the member chips
+  are buttons, so clicking one opens that node's DetailPanel.
+
+Layout is hand-placed in config rather than computed. Dagre would produce a layered DAG,
+which is exactly the picture this view exists as an alternative to. Box *heights* are still
+derived, from member count, by `groupHeight()` — exported from `MapGroupNode` so the view
+can position edges against the same number the box renders at.
+
+Two details worth knowing before editing it:
+
+- Each box side carries source and target handles in **two lanes** (`HANDLE_LANES`). `sideFor()`
+  picks the sides that face each other; when two groups talk both ways, the reverse direction
+  is routed down the second lane so the pair runs parallel instead of stacking both labels on
+  one line.
+- Labels are rationed on purpose. Edges touching the hub or bus (`SPINE_GROUPS`) and edges
+  aggregating `LABEL_THRESHOLD`+ flows are labelled permanently; the rest reveal their label
+  when you hover an endpoint. Labelling all of them at once is unreadable, especially in the
+  Both phase where two eras overlay.
 
 ## Selection and detail
 
