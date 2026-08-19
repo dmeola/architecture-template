@@ -23,10 +23,10 @@ npx tsc --noEmit     # type-check only
 
 | Path | Purpose |
 | --- | --- |
-| `src/config/` | **Per-client config** — `taxonomy.ts` (tiers/statuses/flow-kinds/domains + colors, from which the union types derive), `site.ts` (branding + defaults), `landscape.ts` (swimlanes) |
+| `src/config/` | **Per-client config** — `taxonomy.ts` (tiers/statuses/flow-kinds/domains + colors, from which the union types derive), `site.ts` (branding + defaults), `landscape.ts` (swimlanes), `integration-map.ts` (hub-and-spoke groups + positions) |
 | `src/data/` | The curated model: `systems.ts`, `datastores.ts`, `externals.ts`, `flows.ts`, `migrations.ts`, shared `types.ts`, and `model.ts` (lookups/selectors) |
-| `src/views/` | One client component per tab: Landscape, Data Flows, Data Stores, Migration Map |
-| `src/graph/` | Shared React Flow engine: `FlowGraph.tsx` (nodes/edges/hover/trace), `ArchNode.tsx`, `layout.ts` (dagre) |
+| `src/views/` | One client component per tab: Integration Map (landing page), Landscape, Data Flows, Data Stores, Migration Map |
+| `src/graph/` | Shared React Flow engine: `FlowGraph.tsx` (nodes/edges/hover/trace), `ArchNode.tsx`, `layout.ts` (dagre), `MapGroupNode.tsx` (Integration Map group box) |
 | `src/components/` | `Explorer.tsx` (view shell), `DetailPanel`, `SearchBar`, `Legend` |
 | `src/lib/theme.ts` | Colors + labels for tiers/statuses/domains/flow kinds — **all derived from `src/config/taxonomy.ts`** |
 | `src/proxy.ts` | Cloudflare Access JWT verification (skipped when env vars unset) |
@@ -41,7 +41,8 @@ Follow `docs/data-model.md` (or the `update-architecture-model` skill). The shor
 3. **Adding a `Domain`, `Tier`, `FlowKind`, or status** is a one-line edit in `src/config/taxonomy.ts` — add an entry (with a color) to the relevant array. The union type, theme colors/labels, legend, and chip order all derive from it. No `theme.ts` edit needed.
 4. `flows.ts`: `step` numbers the animated order-lifecycle trace (Data Flows → Orders); `planned: true` renders the edge dashed.
 5. Branding (titles, header, default view/domain) lives in `src/config/site.ts`.
-6. Verify with `npx tsc --noEmit`, then eyeball the affected view in the dev server.
+6. **Integration Map**: adding a node means adding it to a group in `src/config/integration-map.ts` too — an ungrouped node vanishes from the landing page, and the dev-only console warning from `IntegrationMapView` is what tells you. Edges there are derived from `flows.ts`, so don't hand-author topology; use `EDGE_LABELS` only to rename a noisy aggregated label.
+7. Verify with `npx tsc --noEmit`, then eyeball the affected view in the dev server.
 
 ## Conventions
 

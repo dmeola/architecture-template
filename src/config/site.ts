@@ -2,6 +2,7 @@ import type { Domain } from "@/config/taxonomy";
 
 /** The built-in views. Adding a view is a code change (a new component), not config. */
 export type ViewId =
+  | "map"
   | "landscape"
   | "flows"
   | "sequences"
@@ -37,6 +38,6 @@ export const site: SiteConfig = {
   metaTitle: "Acme Outfitters Architecture Explorer",
   metaDescription:
     "Interactive map of Acme Outfitters' systems, data flows, data stores, and migrations",
-  defaultView: "landscape",
+  defaultView: "map",
   defaultDomain: "orders",
 };

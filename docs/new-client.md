@@ -43,7 +43,22 @@ Replace the sample content:
 
 Base facts on the client's real systems (repos, docs, interviews). See [data-model.md](data-model.md) for the full field reference and checklists.
 
-## 6. Verify
+## 6. Integration Map — `src/config/integration-map.ts`
+
+The landing view: a hub-and-spoke diagram that collapses the whole model into a dozen boxes.
+Do this once the nodes exist, since it groups them.
+
+Replace `mapGroups` wholesale — pick the hub (whatever everything talks to), pick the bus
+(whatever every integration crosses), cluster the rest by the role each plays in this
+client's story, and lay the boxes out on the three-column spine. Then set `SPINE_GROUPS` in
+`src/views/IntegrationMapView.tsx` to the hub and bus group ids.
+
+Only grouping and position live here — edges are derived from `flows.ts`, so don't
+hand-author topology. Use `EDGE_LABELS` to rename an aggregated label that has gone noisy,
+never to invent an edge. Every node should sit in exactly one group; an ungrouped one
+renders nowhere, and the view logs a dev-only console warning naming it.
+
+## 7. Verify
 
 ```bash
 npx tsc --noEmit
@@ -53,6 +68,6 @@ npm run dev
 
 Check all four views (Landscape lanes populate, Data Flows chips + Orders trace animate, Data Stores fact card, Migration Map statuses). Then deploy per the [README](../README.md) (Vercel behind Cloudflare Access).
 
-## 7. Optional: the AI chat editor + GitHub write-back
+## 8. Optional: the AI chat editor + GitHub write-back
 
 The "Edit with AI" bubble works with zero setup for browsing and proposing changes — it only needs a GitHub App to actually **save** a proposed change or list/revert History. If this client wants that, see the README's "AI chat editor & GitHub write-back" section for creating the App and setting its five env vars. Skip it entirely and the rest of the app is unaffected.

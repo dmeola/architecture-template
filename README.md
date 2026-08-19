@@ -13,6 +13,12 @@ npm run dev   # http://localhost:3000
 
 ## Views
 
+- **Integration Map** *(landing page)* — the hub-and-spoke system landscape: the commerce
+  platform as the hub, the integration layer as a bus band every integration crosses, and
+  the rest of the estate as clustered satellites. A higher-altitude view than the System
+  Landscape — it collapses the whole model into a dozen boxes. Hover a box to isolate its
+  connections; click any member chip for that node's fact sheet. Edge thickness reflects
+  how many underlying flows cross that boundary.
 - **System Landscape** — every system, data store, and external service in swimlanes. Lanes derive from each system's tier (plus data stores and externals), configured in `src/config/landscape.ts`. Hover a node to isolate its connections; click for the full fact sheet.
 - **Data Flows** — filter the graph by business domain (Orders, Payments, Catalog, Inventory, Fulfillment, Customers, Marketing, Search, Reporting). The Orders domain traces the order lifecycle with numbered, animated steps.
 - **Sequence Diagrams** — step-by-step call/response scenarios (e.g. checkout, payment capture) as lifeline diagrams.
@@ -20,7 +26,7 @@ npm run dev   # http://localhost:3000
 - **Migration Map** — each modernization effort, what it replaces, and its status.
 - **History** — commits made through the AI chat editor, with one-click revert.
 
-A **Current / Both / Target** toggle in the header (Landscape, Data Flows, Sequence Diagrams, Data Stores) filters the map to one side of an in-flight migration — useful once a client has systems moving to a new platform; it's a no-op otherwise. See [docs/data-model.md](docs/data-model.md#current--target-phase).
+A **Current / Both / Target** toggle in the header (Integration Map, Landscape, Data Flows, Sequence Diagrams, Data Stores) filters the map to one side of an in-flight migration — useful once a client has systems moving to a new platform; it's a no-op otherwise. See [docs/data-model.md](docs/data-model.md#current--target-phase).
 
 An **"Edit with AI"** bubble (bottom-right, every view) opens a chat that can add/update/remove systems, data stores, externals, flows, migrations, and sequences by conversation, with a live preview on the real diagram before anything is saved. See below for what it needs to actually save changes.
 
@@ -32,6 +38,7 @@ Two directories hold everything client-specific:
 | --- | --- |
 | `src/config/taxonomy.ts` | Tiers, system statuses, flow kinds, domains, migration statuses — each an array of `{ id, label, color }`. The TypeScript union types and all theme colors/labels derive from these arrays, so adding a domain (etc.) is a one-line edit. |
 | `src/config/site.ts` | Branding: app name, titles, header text, default view and domain. |
+| `src/config/integration-map.ts` | Group membership + positions for the Integration Map. See [Integration Map specifics](#integration-map-specifics). |
 | `src/config/landscape.ts` | Swimlane columns for the Landscape view (by tier, by kind, or an explicit id list). |
 | `src/data/systems.ts` | Each system: tier, status, stack, runtime, notes. |
 | `src/data/datastores.ts` | Databases and storage with their notable contents. |
@@ -40,6 +47,38 @@ Two directories hold everything client-specific:
 | `src/data/migrations.ts` | Legacy → modern replacement pairs with status and summary. |
 
 Add or edit entries and the views update automatically. Node `id`s are referenced by flows and migrations, so keep them stable.
+
+### Integration Map specifics
+
+`src/config/integration-map.ts` states only **grouping and position** — the editorial
+judgement the diagram exists to express. Everything else is derived, so the map cannot drift
+out of sync with the model:
+
+- **Edges** come from `flows.ts`. Any flow crossing a group boundary produces one
+  group-to-group edge, and stroke weight scales with how many flows it stands for. Adding a
+  flow updates the map automatically. `EDGE_LABELS` overrides the derived label where
+  aggregation gets noisy — use it to *rename* traffic, never to invent topology.
+- **Phase** reuses `nodePhase`/`flowPhase`, so the Current/Target toggle filters members and
+  a group left with none disappears rather than rendering as an empty labelled box.
+
+Standing this up for a client: replace `mapGroups` wholesale. Pick the hub (whatever
+everything talks to), pick the bus (whatever every integration crosses), cluster the rest by
+the role they play in that client's story, and position the boxes on the three-column spine.
+Then update `SPINE_GROUPS` in `src/views/IntegrationMapView.tsx` to the hub and bus group
+ids — those two are always labelled, regardless of edge weight.
+
+Every node should belong to exactly one group. An ungrouped node renders nowhere, so
+`IntegrationMapView` logs a dev-only console warning naming anything ungrouped, duplicated,
+or referencing an id that isn't in the model.
+
+Dagre is deliberately not used here — it produces the layered DAG this view exists as an
+alternative to. Positions are hand-placed for that reason.
+
+**On vendor logos.** `MapGroup.logo` renders an SVG from `public/` in a box header, and is
+the conventional treatment for this kind of diagram. It's left unset in the sample: logo
+libraries cover consumer brands and dev tools, not the enterprise retail vendors most of
+these models are full of, and mixing a handful of logos with dozens of text nodes reads as
+unfinished. Add them per client as you source them from vendor press kits.
 
 Full editing reference: [docs/data-model.md](docs/data-model.md). How the app is built: [docs/app-architecture.md](docs/app-architecture.md). New-client runbook: [docs/new-client.md](docs/new-client.md).
 
