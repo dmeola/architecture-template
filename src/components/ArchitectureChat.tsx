@@ -169,17 +169,58 @@ export function ArchitectureChat() {
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-label={open ? "Close AI editor" : "Open AI editor"}
-        className={`fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full px-4 py-3 text-[13px] font-medium shadow-xl transition-colors ${
+        // Same vocabulary as the header nav and the Send button — a dark panel surface with
+        // a sky accent, going to the sky wash when active. The previous solid `bg-sky-500`
+        // pill was the one saturated block in the whole UI and read as a foreign widget.
+        className={`fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full border px-4 py-3 text-[13px] font-medium shadow-xl transition-colors ${
           open
-            ? "bg-slate-800 text-slate-200 hover:bg-slate-700"
-            : "bg-sky-500 text-slate-950 hover:bg-sky-400"
+            ? "border-sky-500/40 bg-sky-500/15 text-sky-300 hover:bg-sky-500/25"
+            : "border-slate-700 bg-[#0e1626]/95 text-sky-300 hover:border-sky-500/40 hover:bg-sky-500/10"
         }`}
       >
-        <span aria-hidden="true" className="text-base leading-none">
-          {open ? "✕" : "💬"}
-        </span>
+        {open ? <CloseIcon /> : <AiSparkIcon />}
         {open ? "Close" : "Edit with AI"}
       </button>
     </>
+  );
+}
+
+/**
+ * The four-point sparkle that has become the generic mark for "AI".
+ *
+ * Drawn inline rather than pulled from an icon library: the app runs behind Cloudflare
+ * Access, so a remote asset is a request that can only fail, and `fill="currentColor"` is
+ * what keeps the glyph on-palette in both button states without restating a color here.
+ */
+function AiSparkIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="h-4 w-4 shrink-0"
+      fill="currentColor"
+    >
+      <path d="M9.5 2.5C9.97 6.7 12.3 9.03 16.5 9.5C12.3 9.97 9.97 12.3 9.5 16.5C9.03 12.3 6.7 9.97 2.5 9.5C6.7 9.03 9.03 6.7 9.5 2.5Z" />
+      <path
+        d="M18.5 14.5C18.73 16.6 19.9 17.77 22 18C19.9 18.23 18.73 19.4 18.5 21.5C18.27 19.4 17.1 18.23 15 18C17.1 17.77 18.27 16.6 18.5 14.5Z"
+        opacity="0.7"
+      />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="h-4 w-4 shrink-0"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
   );
 }
