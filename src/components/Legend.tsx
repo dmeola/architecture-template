@@ -16,7 +16,9 @@ export function Legend() {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="pointer-events-auto absolute bottom-4 right-4 z-40">
+    // Top-left: the AI editor bubble is pinned bottom-right, and an open legend panel
+    // sat underneath it. Nothing else overlays this corner.
+    <div className="pointer-events-auto absolute left-4 top-4 z-40">
       {open ? (
         <div className="w-72 rounded-lg border border-slate-700 bg-[#0e1626]/95 p-4 shadow-xl">
           <div className="flex items-center justify-between">
